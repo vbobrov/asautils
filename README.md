@@ -4,7 +4,7 @@ These tools automate some common Cisco ASA Tasks
 
 ## sendconf.py
 
-**No internal product information was used to develop this tool. It was created by intercepting communication between ASDM and ASA using Fiddler.
+**No internal product information was used to develop this tool. Windows tool Fiddler was used to identify the protocol used by ASDM.
 
 This tools automates common tasks associated with configuring Cisco ASA physical or virtual appliances.
 
@@ -39,6 +39,7 @@ When uploading configs, the ASA will accept exec level commands such as *write m
 The only non-default module that needs to be installed is **requests**.
 
 Here's full usage help of the tool:
+
     usage: sendconf.py [-h] -a <ASAIP>[:<PORT>] [-u <username>] [-p <password>] [-t <trustpoint>=<pemfile> [<trustpoint>=<pemfile> ...]]
                     [-i <trustpoint>=<pfxfile>,<password> [<trustpoint>=<pfxfile>,<password> ...]] [-f <devicefile>=<localfile> [<devicefile>=<localfile> ...]]
                     [-c <configfile> [<configfile> ...]] [-d <level>]
@@ -146,7 +147,7 @@ Uploading files.
 ### Example 4
 Performing all functions at once
 
-    $ ./sendconf.py -a 3.211.54.192 -u cisco -p cisco -f sdesktop/data.xml=data.xml anyconnect-win-4.10.01075-webdeploy-k9.pkg=anyconnect-win-4.10.01075-webdeploy-k9.pkg dap.xml=dap.xml -i tp1=cisco1.pfx,cisco tp2=cisco2.pfx,cisco -t x1=LetsEncryptX1.cer x3=LetsEncryptX3.cer -c config1.txt saveconfig.txt
+    $ ./sendconf.py -a 1.2.3.4 -u cisco -p cisco -f sdesktop/data.xml=data.xml anyconnect-win-4.10.01075-webdeploy-k9.pkg=anyconnect-win-4.10.01075-webdeploy-k9.pkg dap.xml=dap.xml -i tp1=cisco1.pfx,cisco tp2=cisco2.pfx,cisco -t x1=LetsEncryptX1.cer x3=LetsEncryptX3.cer -c config1.txt saveconfig.txt
     2021-08-06 23:14:38,982 - INFO - Attempting to import CA certificate x3
     2021-08-06 23:14:39,086 - INFO - Received response:
     WARNING: Removing an enrolled trustpoint will destroy all 
