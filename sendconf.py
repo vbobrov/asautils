@@ -49,7 +49,7 @@ parser.add_argument("-t",metavar="<trustpoint>=<pemfile>",help="Root CA Trustpoi
 parser.add_argument("-i",metavar="<trustpoint>=<pfxfile>,<password>",help="Identity Trustpoints and PKCS12 files",nargs="+")
 parser.add_argument("-f",metavar="<devicefile>=<localfile>",help="Upload files. Device file relative to disk0:/. Eg. sdesktop/data.xml=/tmp/data.xml",nargs="+")
 parser.add_argument("-c",metavar="<configfile>",help="Path one or more config files. Configs will be applied in order.",nargs="+")
-parser.add_argument("-x",metavar="basic|asdm",help="Authentication method. ASDM authenticates only once to allow OTP authentication",default="asdm",choices=["basic","asdm"])
+parser.add_argument("-x",help="Use basic authentication",action="store_true")
 parser.add_argument("-d",metavar="<level>",help="Debug level. 1-Warning, 2-Verbose (default), 3-Debug",type=int,default=2,choices=[1,2,3])
 
 args=parser.parse_args()
@@ -61,7 +61,7 @@ asa_base_url=f"https://{args.a}/admin"
 logging.debug("Validating arguments")
 errors=""
 manual=args.m
-asdm_auth=args.x=="asdm"
+asdm_auth=not args.x
 
 id_certs=[]
 if args.i:
