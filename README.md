@@ -35,15 +35,15 @@ Since the tool simulates ASDM, the ASA is expected to be configured with accessi
 
 -i and -t options specify both the trustpoint name as well as the file to be installed in those trustpoints. See examples below.
 
-There is no validation of the contents of the certificates. CA certificate files are expected to be in base64 PEM format. Binary DER format will fail. PKCS12 files are expected to be in the standard binary form. The data from the file is converted to base64 when sent to the ASA.
+There is no validation of the contents of the certificates. CA certificate files are expected to be in base64 PEM format. Binary DER format will fail. PKCS12 files are expected to be in the standard binary form. The data from the PKCS12 files is converted to base64 when sent to the ASA.
 
-Before certificates are installed, the tools makes the attempt to remove the match private key and the trustpoint. You may see errors if the items to be removed are not configured.
+Before certificates are installed, the tools makes an attempt to remove the matching private key and the trustpoint. You may see errors if the items to be removed are not configured.
 
 File upload feature runs *verify* command on the ASA to calculate MD5 hash of the file if it already exists on the device. If that hash matches that of the local file, the upload is skipped. When specifying the file name on the ASA, omit *disk0:/*. For example, to upload *disk0:/vpnprofiles/vpn1.xml*, specify *vpnprofiles/vpn1.xml*
 
-You can use file upload feature to upload Dynamic Access Policy (DAP) as well as hostscan conditions (process, registry, etc). The DAP configuration is stored in disk0:/dap.xml and hostscan checks in disk0:/sdesktop/data.xml
+You can use file upload feature to upload Dynamic Access Policy (DAP) as well as hostscan conditions (process, registry, etc). The DAP configuration is stored in *disk0:/dap.xml* and hostscan checks in *disk0:/sdesktop/data.xml*. if *dap.xml* file is updated, *dynamic-access-policy-config activate* must be executed on the ASA to force a reload of that file. Be sure to add that command to the subsequent config file.
 
-When uploading configs, the ASA will accept exec level commands such as *write mem*. There are some commands on the ASA that takes a few seconds to commit, such as setting anyconnect image. if *write mem* is executed immediately after *anyconnect image* command, it will fail. The tool can be run again a few seconds later with just *write mem* command in the supplied config file.
+When uploading configs, the ASA will accept exec level commands such as *write mem*. There are some commands on the ASA that takes a few seconds to commit, such as *anyconnect image*. if *write mem* is executed immediately after *anyconnect image* command, it will fail. The tool can be run again a few seconds later with just *write mem* command in the supplied config file.
 
 If python is not available on the system that can reach the ASA, this tool can generate the required commands to perform the same tasks using native commands of *nix and Windows systems. On Windows, curl is required which appears to be bundled with recent OS releases.
 

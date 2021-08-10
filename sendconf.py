@@ -41,7 +41,7 @@ def get_file_md5(asa_file_name):
 		return("unknown")
 
 parser=argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,allow_abbrev=False,description="ASA Configuration Tool")
-parser.add_argument("-m",help="Output Windows and *nix commands to execute actions manually. Will not attempt to connect to ASA.",action="store_true")
+parser.add_argument("-m",help="Output Windows and *nix commands to execute tasks manually. Will not attempt to connect to ASA.",action="store_true")
 parser.add_argument("-a",metavar="<ASAIP>[:<PORT>]",help="ASA FQDN or IP address. HTTPS Port can be specified optionally",required=True)
 parser.add_argument("-u",metavar="<username>",help="ASDM Username. If ommited, an interactive prompt will be displayed.")
 parser.add_argument("-p",metavar="<password>",help="ASDM Password. If ommited, an interactive prompt will be displayed.")
