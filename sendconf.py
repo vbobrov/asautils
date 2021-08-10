@@ -26,7 +26,7 @@ def post_data(url,data):
 	logging.debug(f"Attempting to post to {url}")
 	debug_level=http_client.HTTPConnection.debuglevel
 	# Disabling debug to avoid printing contents of large files on the console
-	http_client.HTTPConnection.debuglevel = 1
+	http_client.HTTPConnection.debuglevel = 0
 	r=asa_session.post(f"{asa_base_url}/{url}",data=data,allow_redirects=False)
 	r.raise_for_status()
 	http_client.HTTPConnection.debuglevel = debug_level
