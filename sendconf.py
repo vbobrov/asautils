@@ -16,7 +16,7 @@ from getpass import getpass
 def send_exec_command(command):
 	global asa_session,asa_base_url
 	logging.debug(f"Attempting to execute: {command}")
-	r=asa_session.get(f"{asa_base_url}/exec/{quote(command,safe='')}")
+	r=asa_session.get(f"{asa_base_url}/exec/{quote(command,safe='')}",allow_redirects=False)
 	r.raise_for_status()
 	logging.debug(f"Response received:\n{r.text}")
 	return(r.text)
@@ -26,8 +26,8 @@ def post_data(url,data):
 	logging.debug(f"Attempting to post to {url}")
 	debug_level=http_client.HTTPConnection.debuglevel
 	# Disabling debug to avoid printing contents of large files on the console
-	http_client.HTTPConnection.debuglevel = 0
-	r=asa_session.post(f"{asa_base_url}/{url}",data=data)
+	http_client.HTTPConnection.debuglevel = 1
+	r=asa_session.post(f"{asa_base_url}/{url}",data=data,allow_redirects=False)
 	r.raise_for_status()
 	http_client.HTTPConnection.debuglevel = debug_level
 	logging.debug(f"Response received:\n{r.text}")
@@ -49,6 +49,7 @@ parser.add_argument("-t",metavar="<trustpoint>=<pemfile>",help="Root CA Trustpoi
 parser.add_argument("-i",metavar="<trustpoint>=<pfxfile>,<password>",help="Identity Trustpoints and PKCS12 files",nargs="+")
 parser.add_argument("-f",metavar="<devicefile>=<localfile>",help="Upload files. Device file relative to disk0:/. Eg. sdesktop/data.xml=/tmp/data.xml",nargs="+")
 parser.add_argument("-c",metavar="<configfile>",help="Path one or more config files. Configs will be applied in order.",nargs="+")
+parser.add_argument("-x",metavar="basic|asdm",help="Authentication method. ASDM authenticates only once to allow OTP authentication",default="asdm",choices=["basic","asdm"])
 parser.add_argument("-d",metavar="<level>",help="Debug level. 1-Warning, 2-Verbose (default), 3-Debug",type=int,default=2,choices=[1,2,3])
 
 args=parser.parse_args()
@@ -60,6 +61,7 @@ asa_base_url=f"https://{args.a}/admin"
 logging.debug("Validating arguments")
 errors=""
 manual=args.m
+asdm_auth=args.x=="asdm"
 
 id_certs=[]
 if args.i:
@@ -169,9 +171,16 @@ if manual:
 	windows_cli=""
 	linux_cli=""
 	tmp_suffix=random.randint(100000,999999)
-	linux_cli+=f'''# Login to the ASA
+	
+	if asdm_auth:
+		linux_cli+=f'''# Login to the ASA
 curl -k -X POST -d "username={username}&password={password}&tgroup=DefaultADMINGroup&Login=Login" "https://{args.a}/+webvpn+/index.html" -A "ASDM/"  -b "webvpnlogin=1; tg=0RGVmYXVsdEFETUlOR3JvdXA=" -c /tmp/cj_{tmp_suffix}.txt
 '''
+		curl_url=args.a
+		curl_opt='-A "ASDM/"  -b /tmp/cj_{tmp_suffix}.txt -c /tmp/cj_{tmp_suffix}.txt'
+	else:
+		curl_url=f"{username}:{password}@{args.a}"
+		curl_opt='-A "ASDM"'
 else:
 	if args.d==3:
 		http_client.HTTPConnection.debuglevel = 1
@@ -183,16 +192,29 @@ else:
 	urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 	asa_session.verify=False
 
-	asa_session.cookies.set("tg","0RGVmYXVsdEFETUlOR3JvdXA=")
-	asa_session.cookies.set("webvpnlogin","1")
+	if asdm_auth:
+		asa_session.cookies.set("tg","0RGVmYXVsdEFETUlOR3JvdXA=")
+		asa_session.cookies.set("webvpnlogin","1")
+		asa_session.headers.update({"User-Agent":"ASDM/"})
+		logging.debug("Attempting to login")
+		asa_session.post(f"https://{args.a}/+webvpn+/index.html",data={"username":username,"password":password,"tgroup":"DefaultADMINGroup","Login":"Login"})
+		if not asa_session.cookies.get("webvpn"):
+			logging.error("Login failed")
+			sys.exit(1)
+		
+	else:
+		asa_session.auth=(username,password)
+		asa_session.headers.update({"User-Agent":"ASDM"})
+		logging.debug("Validating basic credentials")
+		r=asa_session.get(f"{asa_base_url}/exec/show+version",allow_redirects=False)
+		if r.status_code==401:
+			logging.error("Basic credentials invalid")
+			sys.exit(1)
+		if r.status_code==400:
+			logging.error("Basic authentication is disabled. Add 'http server basic-auth-client ASDM' command")
+			sys.exit(1)
+		r.raise_for_status
 
-	asa_session.headers.update({"User-Agent":"ASDM/"})
-
-	asa_session.post(f"https://{args.a}/+webvpn+/index.html",data={"username":username,"password":password,"tgroup":"DefaultADMINGroup","Login":"Login"})
-
-	if not asa_session.cookies.get("webvpn"):
-		logging.error("Login failed")
-		sys.exit(1)
 
 for ca_cert in ca_certs:
 	tp_name=ca_cert["tp_name"]
@@ -206,7 +228,7 @@ echo enrollment terminal >>/tmp/{tp_name}_{tmp_suffix}.txt
 echo crypto ca authenticate {tp_name} nointeractive >>/tmp/{tp_name}_{tmp_suffix}.txt
 cat {ca_file} >>/tmp/{tp_name}_{tmp_suffix}.txt
 echo quit >>/tmp/{tp_name}_{tmp_suffix}.txt
-curl -k "https://{args.a}/admin/config" -A "ASDM/"  -b /tmp/cj_{tmp_suffix}.txt -c /tmp/cj_{tmp_suffix}.txt --data-binary @/tmp/{tp_name}_{tmp_suffix}.txt -H "Content-Type: application/unknown"
+curl -k "https://{curl_url}/admin/config" {curl_opt} --data-binary @/tmp/{tp_name}_{tmp_suffix}.txt -H "Content-Type: application/unknown"
 rm /tmp/{tp_name}_{tmp_suffix}.txt
 '''
 	else:
@@ -234,7 +256,7 @@ echo crypto key zeroize rsa label {tp_name} noconfirm >>/tmp/{tp_name}_{tmp_suff
 echo crypto ca import {tp_name} pkcs12 {pkcs12_password} nointeractive >>/tmp/{tp_name}_{tmp_suffix}.txt
 cat /tmp/{tp_name}_{tmp_suffix}.b64 >>/tmp/{tp_name}_{tmp_suffix}.txt
 echo quit >>/tmp/{tp_name}_{tmp_suffix}.txt
-curl -k "https://{args.a}/admin/config" -A "ASDM/"  -b /tmp/cj_{tmp_suffix}.txt -c /tmp/cj_{tmp_suffix}.txt --data-binary @/tmp/{tp_name}_{tmp_suffix}.txt -H "Content-Type: application/unknown"
+curl -k "https://{curl_url}/admin/config" {curl_opt} --data-binary @/tmp/{tp_name}_{tmp_suffix}.txt -H "Content-Type: application/unknown"
 rm /tmp/{tp_name}_{tmp_suffix}.txt /tmp/{tp_name}_{tmp_suffix}.b64
 '''
 	else:
@@ -256,7 +278,7 @@ for upload_file in upload_files:
 		local_file_name=upload_file["local_file_name"]
 		linux_cli+=f'''
 # Upload local file {local_file_name} to {asa_file_name} on ASA
-curl -k "https://{args.a}/admin/disk0/{asa_file_name}" -A "ASDM/"  -b /tmp/cj_{tmp_suffix}.txt -c /tmp/cj_{tmp_suffix}.txt --data-binary @{local_file_name} -H "Content-Type: application/unknown"
+curl -k "https://{curl_url}/admin/disk0/{asa_file_name}" {curl_opt} --data-binary @{local_file_name} -H "Content-Type: application/unknown"
 '''
 	else:
 		file_data=upload_file["file_data"]
@@ -276,7 +298,7 @@ for config_file in config_files:
 	if manual:
 		linux_cli+=f'''
 # Applying configuration from {config_file_name}
-curl -k "https://{args.a}/admin/config" -A "ASDM/"  -b /tmp/cj_{tmp_suffix}.txt -c /tmp/cj_{tmp_suffix}.txt --data-binary @{config_file_name} -H "Content-Type: application/unknown"
+curl -k "https://{curl_url}/admin/config" {curl_opt} --data-binary @{config_file_name} -H "Content-Type: application/unknown"
 '''
 	else:
 		config_data=config_file["config_data"]
@@ -285,7 +307,8 @@ curl -k "https://{args.a}/admin/config" -A "ASDM/"  -b /tmp/cj_{tmp_suffix}.txt 
 		logging.info(f"Received response:\n{config_response}")
 
 if manual:
-	linux_cli+=f'''
+	if asdm_auth:
+		linux_cli+=f'''
 # Delete Cookie Jar file
 rm /tmp/cj_{tmp_suffix}.txt
 '''

@@ -31,6 +31,8 @@ The tasks are executed in the order of the list above: CA certificates, Identity
 
 Since the tool simulates ASDM, the ASA is expected to be configured with accessible HTTP server and authentication enabled.
 
+-x basic option can be used to force basic authentication instead of ASDM. This requires *http server basic-auth-client ASDM* command to be present on the ASA.
+
 -u and -p options specify credentials to the ASA. If either or both of these arguments are omitted, they will be collected interactively.
 
 -i and -t options specify both the trustpoint name as well as the file to be installed in those trustpoints. See examples below.
@@ -71,6 +73,7 @@ Here's full usage help of the tool:
                             Upload files. Device file relative to disk0:/. Eg. sdesktop/data.xml=/tmp/data.xml
     -c <configfile> [<configfile> ...]
                             Path one or more config files. Configs will be applied in order.
+	-x basic|asdm         Authentication method. ASDM authenticates only once to allow OTP authentication
     -d <level>            Debug level. 1-Warning, 2-Verbose (default), 3-Debug
 
 ### Example 1 - CA Certificates
