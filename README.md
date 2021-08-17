@@ -80,21 +80,21 @@ Here's full usage help of the tool:
 Installing CA Certificates
 
     $ ./sendconf.py -a 1.2.3.4 -u cisco -p cisco -t x1=LetsEncryptX1.cer x3=LetsEncryptX3.cer 
-    2021-08-06 22:38:47,565 - INFO - Attempting to import CA certificate x3
+    2021-08-06 22:38:47,565 - INFO - Attempting to import CA certificate x1
     2021-08-06 22:38:47,667 - INFO - Received response:
-    ERROR: CA trustpoint 'x3' is not known.
-    Enter the certificate in base64 representation....
-    End with the word "quit" on a line by itself.
-    .
-    INFO: Certificate has the following attributes:
-    Fingerprint:     4887d3a7 5ce51770 de002f32 1f5bc5ce 
+	WARNING: Removing an enrolled trustpoint will destroy all 
+	certificates received from the related Certificate Authority.
+	INFO: Be sure to ask the CA administrator to revoke your certificates.
+	Enter the certificate in base64 representation....
+	End with the word "quit" on a line by itself.
+	.
+	INFO: Certificate has the following attributes:
+	Fingerprint:     0cd2f9e0 da1773e9 ed864da5 e370e74e 
 
-    Trustpoint 'x3' is a subordinate CA and holds a non self-signed certificate.
+	Trustpoint CA certificate accepted.
 
-    Trustpoint CA certificate accepted.
-
-    Cryptochecksum (changed): 84db7dfe c06c042c cf974b51 ef74a419 
-    Config OK
+	Cryptochecksum (changed): bfa9bea3 2d9df0c6 62f13e59 68ebe1aa 
+	Config OK
 
     2021-08-06 22:38:47,667 - INFO - Attempting to import CA certificate x3
     2021-08-06 22:38:47,954 - INFO - Received response:
